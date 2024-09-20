@@ -1,8 +1,7 @@
 # ======================================
 # === Pytorch手写Transformer完整代码
 # ======================================
-# ====================================================================================================
-# 数据构建
+
 import math
 
 import os
@@ -17,18 +16,10 @@ from set_encoder import SetEncoder
 # from src.nesymres.architectures.beam_search import BeamHypotheses
 import numpy as np
 import copy
-# from tqdm import tqdm
-# from ..dataset.generator import Generator, InvalidPrefixExpression
-# from itertools import chain
-# from sympy import lambdify
-# from . import bfgs
 import json
 # from numpy import *
 acc = 0
-# import matplotilb.pyplot as plt
 
-# device = 'cpu'
-# device = 'cuda'
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
@@ -60,9 +51,6 @@ def read_from_file(filename):
 filename = "data_symbols-test.json"
 data = read_from_file(filename)
 
-# if data:
-#     print(data["data"])      # 打印数据部分
-#     print(data["symbols"])   # 打印符号序列部分
 
 sentences = []
 # train_data = [
@@ -79,27 +67,19 @@ for i in range(len(train_data)):
     dec = [pad_words[0:-1], pad_words[1:]]
     sentences.append(dec)
 
-print(sentences[0])
+# print(sentences[0])
 sentences_out = copy.deepcopy(sentences)
 # 中文和英语的单词要分开建立词库
 # Padding Should be Zero
-src_vocab = {'P': 0, '我': 1, '有': 2, '一': 3,
-             '个': 4, '好': 5, '朋': 6, '友': 7, '零': 8, '女': 9, '男': 10}
-src_idx2word = {i: w for i, w in enumerate(src_vocab)}
-src_vocab_size = len(src_vocab)
 
 tgt_vocab = {'P': 0, '+': 1, '-': 2, '*': 3, '/': 4, 'sin': 5, 'cos': 6, 'exp': 7, 'var_x1': 8,
              '0.1': 9, '0.2': 10, '0.3': 11, '0.4': 12, '0.5': 13, '0.6': 14, '0.7': 15, '0.8': 16, '0.9': 17,
              '1.0': 18, '0.0': 19, 'S': 20, 'E': 21}
 # idx2word = {i: w for i, w in enumerate(tgt_vocab)}
 
-### formulaGPT-10000-2
-# tgt_vocab = {'P': 0, '+': 1, '-':2,'*': 3, '/':4,'sin': 5,'cos':6, 'exp':7,'ln':8,'sqrt':9,'var_x1': 10,
-#              '0.1': 11, '0.2': 12, '0.3': 13, '0.4': 14, '0.5': 15,'0.6': 16,'0.7': 17,'0.8': 18,'0.9': 19,'1.0': 20,'0.0': 21, 'S': 22,'E':23}
 idx2word = {i: w for i, w in enumerate(tgt_vocab)}
 # print('idx2word',idx2word)
 tgt_vocab_size = len(tgt_vocab)
-# print(tgt_vocab_size)
 
 # transformer epochs
 # epochs = 400
@@ -146,12 +126,7 @@ dec_inputs, dec_outputs = make_data(sentences)
 enc_inputs = torch.tensor(data["data"])
 # enc_inputs = enc_inputs.long()
 enc_test = copy.deepcopy(enc_inputs)
-print(enc_inputs)
-
-
 # print(enc_inputs)
-# print(dec_inputs)
-# print(dec_outputs)
 
 class MyDataSet(Data.Dataset):  # 类似于将数据拼接
     """自定义DataLoader"""
@@ -169,11 +144,10 @@ class MyDataSet(Data.Dataset):  # 类似于将数据拼接
         return self.enc_inputs[idx], self.dec_inputs[idx], self.dec_outputs[idx]
 
 
-print('MyDataSet', MyDataSet(enc_inputs, dec_inputs, dec_outputs)[0])
+# print('MyDataSet', MyDataSet(enc_inputs, dec_inputs, dec_outputs)[0])
 loader = Data.DataLoader(  # 批训练，把数据变成一小批一小批数据进行训练。
     # DataLoader就是用来包装所使用的数据，每次抛出一批数据
     MyDataSet(enc_inputs, dec_inputs, dec_outputs), 2, True)
-
 
 # ====================================================================================================
 # Transformer模型
@@ -216,14 +190,11 @@ def get_attn_pad_mask(seq_q, seq_k):  ##(encode 和 deconde都用)
     seq_len could be src_len or it could be tgt_len
     seq_len in seq_q and seq_len in seq_k maybe not equal
     """
-    # print(' seq_q.size()',seq_q.size())
     batch_size, len_q = seq_q.size()  # 这个seq_q只是用来expand维度的
     # print('seq_k.size()', seq_k.size())
     batch_size, len_k = seq_k.size()
     # eq(zero) is PAD token
     # 例如:seq_k = [[1,2,3,4,0], [1,2,3,5,0]]
-    # [batch_size, 1, len_k], True is masked
-    # print('11',seq_k.shape)
     pad_attn_mask = seq_k.data.eq(0).unsqueeze(1)  ## seq_k.data.eq(0) seq_k中等于0的为true。
     # print('22',pad_attn_mask)
     # print('33',pad_attn_mask.expand(batch_size, len_q, len_k))
@@ -241,7 +212,6 @@ def get_attn_subsequence_mask(seq):  ## 只在decode用
     subsequence_mask = torch.from_numpy(subsequence_mask).byte()
     # print('44',subsequence_mask)
     return subsequence_mask  # [batch_size, tgt_len, tgt_len]
-
 
 # ==========================================================================================
 class ScaledDotProductAttention(nn.Module):
@@ -774,6 +744,8 @@ def greedy_decoder(model, enc_input, start_symbol):
     global acc  # 声明全局变量
     max_length = 30 ## 公式最大长度
     nu_c = 0 ## 最多寻找几个最大序列长度
+    best_r2 = -np.inf
+    best_expression = ['sin','var_x1']
     while not terminal:
         # print('dec_input', dec_input)
         # 预测阶段：dec_input序列会一点点变长（每次添加一个新预测出来的单词）
@@ -789,10 +761,7 @@ def greedy_decoder(model, enc_input, start_symbol):
         if Ari != 0:
             projected[:, -1, 9:20] = -torch.inf
             projected[:, -1, 0] = -torch.inf
-        # if Ari != 0:
-        #     projected[:,-1,11:22] = -torch.inf
-        #     projected[:,-1,0] = -torch.inf
-        # print('3'*100,len(dec_input[0]))
+
         if Ari + len(fum) >= max_length - 2:
             # print('2'*100)
             projected[:, -1, 8] = torch.inf
@@ -815,7 +784,8 @@ def greedy_decoder(model, enc_input, start_symbol):
         if Ari == 0:
             y_pre = all_farward(fum, sx)
             r2 = R2(sy, y_pre)
-            # print('r2',r2)
+
+            print('r2',r2)
             next_symbol = next_word
             dec_input = torch.cat([dec_input.to(device), torch.tensor([[next_symbol]], dtype=torch.int64).to(device)],
                                   -1)
@@ -823,9 +793,15 @@ def greedy_decoder(model, enc_input, start_symbol):
             print('s_r2', s_r2)
             next_word = tgt_vocab[s_r2]
             # print('y_pre',y_pre)
-            print('fum', fum, s_r2)
+            print('Expresssion', fum)
+            if r2 >= best_r2:
+                best_r2 = r2
+                best_expression = fum
+
+                # print('best_r2',best_r2)
+                # print('best_expression',best_expression)
             if next_word == tgt_vocab["1.0"]:  ### 如果得到的表达式r2为 1 了就停止搜索
-                print('1'*100)
+                # print('1'*100)
                 acc = acc + 1
                 next_symbol = next_word
                 dec_input = torch.cat(
@@ -847,20 +823,14 @@ def greedy_decoder(model, enc_input, start_symbol):
             terminal = True
         # print(next_word)
 
-    # greedy_dec_predict = torch.cat(
-    #     [dec_input.to(device), torch.tensor([[next_symbol]], dtype=enc_input.dtype).to(device)],
-    #     -1)
     greedy_dec_predict = dec_input[:, 1:]  # 去除开始符号
-    return greedy_dec_predict
-
-
+    return greedy_dec_predict, best_r2, best_expression
 
 # ==========================================================================================
 # 预测阶段
 # 测试集
-enc_inputs = enc_test  ## 目前与训练集一样。
-print('3333', enc_inputs.size())
-
+enc_inputs = enc_test  
+# print('3333', enc_inputs.size())
 
 def generate_sentences(n):
     return np.full((n, 2), '', dtype=object).tolist()
@@ -884,16 +854,8 @@ def merge_tensors(D, A, B):
     # 将B赋值到D的右侧
     D[:b_rows, -b_cols:] = B
     return D
-# sentences = [
-# #   dec_input  dec_output
-#     [ '', ''], #此处长度可以不为 8
-#     [ '', ''],
-#     [ '', ''],
-#     [ '', '']
-# ]
 
 dec_inputs, dec_outputs = make_data(sentences)
-# print('dec_inputs',dec_inputs)
 test_loader = Data.DataLoader(
     MyDataSet(enc_inputs, dec_inputs, dec_outputs), int(len(enc_inputs)), True)
 
@@ -909,27 +871,22 @@ X = np.linspace(-4, 4, num=N_sample_point)
 X= X.reshape(N_sample_point,1)
 # X = abs(X)
 x1 = X[:,0]
+#### 指定测试表达式 ####
 y = np.sin(x1**1) + np.sin(x1**2 + x1)
-# l = ["+", "exp", "exp", "exp", "cos", "sin", "*", "var_x1", "var_x1", "var_x1"]
-# y = all_farward(l,x1)
+#### 指定测试表达式 ####
 
 enc_inputs = merge_tensors(sample, torch.tensor(x1), torch.tensor(y)).unsqueeze(0).to(device)
-print('enc_inputs'*10,enc_inputs)
+# print('enc_inputs'*10,enc_inputs)
 print("=" * 30)
 print("通过训练好的formulaGPT预测的数学公式：")
-print('4444', len(enc_inputs))
+# print('4444', len(enc_inputs))
 
 for i in range(len(enc_inputs)):
-    # print('enc_inputs[i].view',enc_inputs[i].view(
-    #     1, -1))
-    # 如果原始张量有10个元素，新的形状是 (1, -1)，那么新的张量的形状将会自动计算为 (1, 10)
-    # print('enc_inputs[i].unsqueeze(0)', enc_inputs[i].unsqueeze(0).size())
-    # print('GT',sentences_out[i])
-    # greedy_dec_predict = greedy_decoder(model, enc_inputs[i].unsqueeze(0).to(device), start_symbol=tgt_vocab["S"])
     for kk in range(1):
-        greedy_dec_predict = greedy_decoder(model, enc_inputs[i].unsqueeze(0).to(device), start_symbol=tgt_vocab["S"])
+        greedy_dec_predict, Best_r2, Best_expression = greedy_decoder(model, enc_inputs[i].unsqueeze(0).to(device), start_symbol=tgt_vocab["S"])
         # greedy_dec_predict = beam_search_decoder(model, enc_inputs[i].unsqueeze(0).to(device), 4, 90, tgt_vocab["S"], tgt_vocab["E"])
-        print('data' + str(i), '->', greedy_dec_predict.squeeze())
-        print('data' + str(i), '->',
-              [idx2word[n.item()] for n in greedy_dec_predict.squeeze()])
+        print('################### The Best Expression ###################')
+        print('The best $R^2$:', Best_r2)
+        print('The best expression: ', Best_expression)
+
 
