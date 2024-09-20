@@ -51,18 +51,18 @@ def read_from_file(filename):
 # 使用示例
 
 #### 如果从离线.json文件中读取数据，用如下代码 ####
-# filename = "data_symbols.json"
-# data = read_from_file(filename)
-# train_data = data["symbols"]
+filename = "data_symbols.json"
+data = read_from_file(filename)
+train_data = data["symbols"]
 
 sentences = []
 
 ### 指定模拟训练数据
-train_data = [
-    ['S + * + * sin * var_x1 + var_x1 var_x1 var_x1 var_x1 var_x1 var_x1 1.0 + * + var_x1 * var_x1 var_x1 var_x1 var_x1 1.0 E'],
-    ['S * sin var_x1 var_x1 0.0 * var_x1 var_x1 1.0 E'],
-    ['S cos var_x1 0.0 sin var_x1 1.0 E'],
-]
+# train_data = [
+#     ['S + * + * sin * var_x1 + var_x1 var_x1 var_x1 var_x1 var_x1 var_x1 1.0 + * + var_x1 * var_x1 var_x1 var_x1 var_x1 1.0 E'],
+#     ['S * sin var_x1 var_x1 0.0 * var_x1 var_x1 1.0 E'],
+#     ['S cos var_x1 0.0 sin var_x1 1.0 E'],
+# ]
 
 ##进行 padding
 for i in range(len(train_data)):
@@ -82,7 +82,7 @@ tgt_vocab_size = len(tgt_vocab)
 # print(tgt_vocab_size)
 
 # transformer epochs
-epochs = 400
+epochs = 40
 src_len = 8  # enc_input max sequence length
 tgt_len = 16  # dec_input(=dec_output) max sequence length
 
@@ -126,7 +126,6 @@ enc_test = copy.deepcopy(enc_inputs)
 
 class MyDataSet(Data.Dataset): #类似于将数据拼接
     """自定义DataLoader"""
-
     def __init__(self, enc_inputs, dec_inputs, dec_outputs):
         super(MyDataSet, self).__init__()
         self.enc_inputs = enc_inputs
@@ -413,23 +412,16 @@ class Encoder(nn.Module):
         """
         enc_inputs: [batch_size, src_len]
         """
-        # print('enc_inputs', enc_inputs)
-        # enc_outputs = self.src_emb(
-        #     enc_inputs)  # [batch_size, src_len, d_model] ;enc_input作为输入，会在Embeding中进行一些列运算映射的。
 
         enc_outputs = self.src_emb(
             enc_inputs)  # [batch_size, src_len, d_model] ;enc_input作为输入，会在Embeding中进行一些列运算映射的。
-        # print('enc_inputs',enc_inputs.size())
-        # print('enc_outputs',enc_outputs.size()) # batch * 4
-        # print('pos_emb',self.pos_emb(enc_outputs.transpose(0, 1)).shape)
 
         enc_outputs = self.pos_emb(enc_outputs.transpose(0, 1)).transpose(
             0, 1)  # [batch_size, src_len, d_model] ### 得到加上位置编码的输入序列
         # Encoder输入序列的pad mask矩阵
-        # enc_self_attn_mask = get_attn_pad_mask(
-        #     enc_inputs, enc_inputs)  # [batch_size, src_len, src_len]
+
         enc_self_attn_mask = torch.zeros(enc_outputs.size()[0], enc_outputs.size()[1], 4, dtype=torch.bool).cuda()
-        # print('enc_self_attn_mask',enc_self_attn_mask)
+
         enc_self_attns = []  # 在计算中不需要用到，它主要用来保存你接下来返回的attention的值（这个主要是为了你画热力图等，用来看各个词之间的关系
         for layer in self.layers:  # for循环访问nn.ModuleList对象
             # 上一个block的输出enc_outputs作为当前block的输入
@@ -457,13 +449,13 @@ class Decoder(nn.Module):
         """
         dec_outputs = self.tgt_emb(
             dec_inputs)  # [batch_size, tgt_len, d_model]
-        # print('dec_outputs',dec_outputs)
+
         dec_outputs = self.pos_emb(dec_outputs.transpose(0, 1)).transpose(0, 1).to(
             device)  # [batch_size, tgt_len, d_model]
         # Decoder输入序列的pad mask矩阵（这个例子中decoder是没有加pad的，实际应用中都是有pad填充的）
         dec_self_attn_pad_mask = get_attn_pad_mask(dec_inputs, dec_inputs).to(
             device)  # [batch_size, tgt_len, tgt_len]
-        # print('dec_self_attn_pad_mask',dec_self_attn_pad_mask)
+
         # Masked Self_Attention：当前时刻是看不到未来的信息的
         dec_self_attn_subsequence_mask = get_attn_subsequence_mask(dec_inputs).to(
             device)  # [batch_size, tgt_len, tgt_len]
@@ -475,11 +467,9 @@ class Decoder(nn.Module):
         # 这个mask主要用于encoder-decoder attention层
         # get_attn_pad_mask主要是enc_inputs的pad mask矩阵(因为enc是处理K,V的，求Attention时是用v1,v2,..vm去加权的，要把pad对应的v_i的相关系数设为0，这样注意力就不会关注pad向量)
         #                       dec_inputs只是提供expand的size的
-        # print('888888888',enc_inputs.size())
         enc_inputs_mask = torch.ones(enc_inputs.size()[0],enc_inputs.size()[2]).cuda()
         dec_enc_attn_mask = get_attn_pad_mask(
             dec_inputs, enc_inputs_mask)  # [batc_size, tgt_len, src_len]
-        # print('888888888', enc_inputs.size())
         dec_self_attns, dec_enc_attns = [], []
         for layer in self.layers:
             # dec_outputs: [batch_size, tgt_len, d_model], dec_self_attn: [batch_size, n_heads, tgt_len, tgt_len], dec_enc_attn: [batch_size, h_heads, tgt_len, src_len]
@@ -488,7 +478,6 @@ class Decoder(nn.Module):
                                                              dec_enc_attn_mask)
             dec_self_attns.append(dec_self_attn)
             dec_enc_attns.append(dec_enc_attn)
-        # dec_outputs: [batch_size, tgt_len, d_model]
         return dec_outputs, dec_self_attns, dec_enc_attns
 
 class Transformer(nn.Module):
@@ -504,8 +493,6 @@ class Transformer(nn.Module):
         enc_inputs: [batch_size, src_len]
         dec_inputs: [batch_size, tgt_len]
         """
-        # tensor to store decoder outputs
-        # outputs = torch.zeros(batch_size, tgt_len, tgt_vocab_size).to(self.device)
 
         # enc_outputs: [batch_size, src_len, d_model], enc_self_attns: [n_layers, batch_size, n_heads, src_len, src_len]
         # 经过Encoder网络后，得到的输出还是[batch_size, src_len, d_model]
@@ -575,6 +562,10 @@ optimizer = optim.SGD(model.parameters(), lr=1e-4,
 # optimizer = optim.Adam(model.parameters(), lr=1e-4, betas=(0.9, 0.999), weight_decay=1e-5)
 # ====================================================================================================
 for epoch in range(epochs):
+    if epoch%40 == 0:
+        # 每 40个 epoch保存一次模型参数
+        torch.save(model.state_dict(), 'formulaGPT-epoch-ex.pth')
+        print('Model weights saved epoch ' + str(epoch))
     for enc_inputs, dec_inputs, dec_outputs in loader:
         # print('enc_inputs, dec_inputs, dec_outputs',enc_inputs, dec_inputs, dec_outputs)
         """
@@ -589,11 +580,7 @@ for epoch in range(epochs):
         # outputs: [batch_size * tgt_len, tgt_vocab_size]
         outputs, enc_self_attns, dec_self_attns, dec_enc_attns = model(
             enc_inputs, dec_inputs)
-        # print('outputs',outputs.shape)
-        # print('dec_outputs',dec_outputs.view(-1))
-        # dec_outputs.view(-1):[batch_size * tgt_len * tgt_vocab_size]
-        # print(outputs.size())
-        # print(dec_outputs.size())
+
         loss = criterion(outputs, dec_outputs.view(-1)) ## 此处将每个batch的所有label 拉平了比如【2，7】->[1,14]
         print('Epoch:', '%04d' % (epoch + 1), 'loss =', '{:.6f}'.format(loss))
 
@@ -601,115 +588,3 @@ for epoch in range(epochs):
         loss.backward()
         optimizer.step()
 
-
-def greedy_decoder(model, enc_input, start_symbol):
-    """贪心编码
-    For simplicity, a Greedy Decoder is Beam search when K=1. This is necessary for inference as we don't know the
-    target sequence input. Therefore we try to generate the target input word by word, then feed it into the transformer.
-    Starting Reference: http://nlp.seas.harvard.edu/2018/04/03/attention.html#greedy-decoding
-    :param model: Transformer Model
-    :param enc_input: The encoder input
-    :param start_symbol: The start symbol. In this example it is 'S' which corresponds to index 4
-    :return: The target input
-    """
-    print('enc_inputs.size()3333', enc_input.size())
-    enc_outputs, enc_self_attns = model.encoder(enc_input)
-    # 初始化一个空的tensor: tensor([], size=(1, 0), dtype=torch.int64)
-    dec_input = torch.zeros(1, 0, dtype=torch.int64)
-
-    terminal = False
-    next_symbol = start_symbol
-    Ari = 1
-    fum = []
-    while not terminal:
-        # print('dec_input', dec_input)
-        # 预测阶段：dec_input序列会一点点变长（每次添加一个新预测出来的单词）
-        dec_input = torch.cat([dec_input.to(device), torch.tensor([[next_symbol]], dtype=torch.int64).to(device)],
-                              -1)
-        # print('enc_inputs.size()8888',enc_inputs.size())
-        # enc_inputs_mask2 = torch.ones(enc_inputs.size()[0], enc_inputs.size()[2]).cuda()
-
-        dec_outputs, _, _ = model.decoder(dec_input, enc_input, enc_outputs)
-        # print('5' * 100)
-        projected = model.projection(dec_outputs)
-        print('projected1111',projected.size())
-        if Ari != 0:
-            projected[:,-1,9:20] = -torch.inf
-            projected[:,-1,0] = -torch.inf
-        prob = projected.squeeze(0).max(dim=-1, keepdim=False)[1]
-        # print('projected[-1]', projected[:,-1,9:20])
-        # print('prob',prob)
-        # 增量更新（我们希望重复单词预测结果是一样的）
-        # 我们在预测时会选择性忽略重复的预测的词，只摘取最新预测的单词拼接到输入序列中
-        # 拿出当前预测的单词(数字)。我们用x'_t对应的输出z_t去预测下一个单词的概率，不用z_1,z_2..z_{t-1}
-        next_word = prob.data[-1]
-
-        # print('next_word',next_word.item())
-        sym = idx2word[next_word.item()]
-        if sym in ['+','-','*','/','sin','cos','exp','var_x1']:
-            fum.append(sym)
-            Ari = Ari + Arity(sym) - 1
-
-        sx = enc_input[:, :, 0].cpu().numpy()[0]
-        sy = enc_input[:, :, -1].cpu().numpy()[0] ##### 此处要改 y的位置应该用-1为妥
-        if Ari == 0:
-            y_pre = all_farward(fum,sx)
-            r2 = R2(sy,y_pre)
-            # print('r2',r2)
-            next_symbol = next_word
-            dec_input = torch.cat([dec_input.to(device), torch.tensor([[next_symbol]], dtype=torch.int64).to(device)],
-                                  -1)
-            s_r2 = process_R2(r2)
-            print('s_r2',s_r2)
-            next_word = tgt_vocab[s_r2]
-            # print('y_pre',y_pre)
-            print('fum',fum,s_r2)
-            fum = []
-            Ari = 1
-        # print('next_word',next_word)
-        next_symbol = next_word
-        if next_symbol == tgt_vocab["E"]:
-            terminal = True
-        # print(next_word)
-
-    # greedy_dec_predict = torch.cat(
-    #     [dec_input.to(device), torch.tensor([[next_symbol]], dtype=enc_input.dtype).to(device)],
-    #     -1)
-    greedy_dec_predict = dec_input[:, 1:] #去除开始符号
-    return greedy_dec_predict
-
-
-# ==========================================================================================
-# 预测阶段
-# 测试集
-sentences = [
-    # enc_input                dec_input           dec_output
-    [ '', ''], #此处长度可以不为 8
-    [ '', ''],
-    [ '', '']
-]
-
-dec_inputs, dec_outputs = make_data(sentences)
-enc_inputs = enc_test
-print('3333',enc_inputs.size())
-# print('dec_inputs',dec_inputs)
-test_loader = Data.DataLoader(
-    MyDataSet(enc_inputs, dec_inputs, dec_outputs), 3, True)
-
-# next(iter(test_loader)) 的作用是从 test_loader 中获取并返回"第一批"数据,比如此处，无论给多少，都只返回第一个 batch 的。
-enc_inputs, _, _ = next(iter(test_loader))
-# print('enc_inputs5555',enc_inputs)
-# print('enc_inputs',enc_inputs)
-
-print("=" * 30)
-print("通过训练好的formulaGPT预测的数学公式：")
-print('4444',len(enc_inputs))
-for i in range(len(enc_inputs)):
-    # print('enc_inputs[i].view',enc_inputs[i].view(
-    #     1, -1))
-    #如果原始张量有10个元素，新的形状是 (1, -1)，那么新的张量的形状将会自动计算为 (1, 10)
-    print('enc_inputs[i].unsqueeze(0)',enc_inputs[i].unsqueeze(0).size())
-    greedy_dec_predict = greedy_decoder(model, enc_inputs[i].unsqueeze(0).to(device), start_symbol=tgt_vocab["S"])
-    print('data'+ str(i), '->', greedy_dec_predict.squeeze())
-    print('data'+ str(i), '->',
-          [idx2word[n.item()] for n in greedy_dec_predict.squeeze()])
