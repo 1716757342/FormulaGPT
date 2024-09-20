@@ -604,7 +604,6 @@ LOSS = []
 model_path = 'formulaGPT-epoch-10000.pth'  # 更新为你的文件路径
 # model_path = 'formulaGPT-epoch-10000-2.pth'  # 更新为你的文件路径
 
-
 # 加载权重到模型中
 model.load_state_dict(torch.load(model_path))
 # 设置为评估模式
@@ -671,13 +670,12 @@ def beam_search_decoder(model, enc_input, beam_width, max_length, sos_token, eos
                 probs[0] = -torch.inf
             # 取概率最高的beam_width个词
 
-            # print('44445555',probs)
-            top_probs, top_indices = torch.topk(probs, beam_width) ##选择概率最大的前k个。
+            top_probs, top_indices = torch.topk(probs, beam_width) ## Choose the top k with the highest probability.
             # print('top_probs', top_probs)
             sx = enc_input[:, :, 0].cpu().numpy()[0]
-            sy = enc_input[:, :, -1].cpu().numpy()[0]  ##### 此处要改 y的位置应该用-1为妥
-            # print('next_seq.tolist', next_seq.tolist())
-            # 为每个词创建新的序列并更新其得分
+            sy = enc_input[:, :, -1].cpu().numpy()[0]
+
+
             for i in range(beam_width):
                 if Ari[i] != 0:
                     sym = idx2word[top_indices[i].item()]
@@ -716,17 +714,16 @@ def beam_search_decoder(model, enc_input, beam_width, max_length, sos_token, eos
                 # print('2'*20,r2_score)
                 candidates.append((next_seq, next_score, r2_score))
                 # print('candidates',candidates)
-        # 保留总得分最高的beam_width个候选序列
+        # The beam_width candidate sequences with the highest total score are kept
         beams = sorted(candidates, key=lambda x: x[1], reverse=True)[:beam_width]
 
-    # 从束中选择得分最高的序列作为输出
+    # The sequence with the highest score from the bundle is selected as the output
     return max(beams, key=lambda x: x[2])[0]
 
 def greedy_decoder(model, enc_input, start_symbol):
-    """贪心编码
+    """Greedy coding
     For simplicity, a Greedy Decoder is Beam search when K=1. This is necessary for inference as we don't know the
     target sequence input. Therefore we try to generate the target input word by word, then feed it into the transformer.
-    Starting Reference: http://nlp.seas.harvard.edu/2018/04/03/attention.html#greedy-decoding
     :param model: Transformer Model
     :param enc_input: The encoder input
     :param start_symbol: The start symbol. In this example it is 'S' which corresponds to index 4
@@ -734,21 +731,21 @@ def greedy_decoder(model, enc_input, start_symbol):
     """
     # print('enc_inputs.size()3333', enc_input.size())
     enc_outputs, enc_self_attns = model.encoder(enc_input)
-    # 初始化一个空的tensor: tensor([], size=(1, 0), dtype=torch.int64)
+    # Initialize an all-zero tensor: tensor([], size=(1, 0), dtype=torch.int64)
     dec_input = torch.zeros(1, 0, dtype=torch.int64)
 
     terminal = False
     next_symbol = start_symbol
     Ari = 1
     fum = []
-    global acc  # 声明全局变量
-    max_length = 30 ## 公式最大长度
-    nu_c = 0 ## 最多寻找几个最大序列长度
+    global acc  # Declaring global variables
+    max_length = 30 ## Maximum length of formula
+    nu_c = 0 ## At most a few maximum sequence lengths are sought
     best_r2 = -np.inf
     best_expression = ['sin','var_x1']
     while not terminal:
         # print('dec_input', dec_input)
-        # 预测阶段：dec_input序列会一点点变长（每次添加一个新预测出来的单词）
+        # Prediction phase: The dec_input sequence gets longer (one new predicted symbol at a time)
         dec_input = torch.cat([dec_input.to(device), torch.tensor([[next_symbol]], dtype=torch.int64).to(device)],
                               -1)
         # print('enc_inputs.size()8888',enc_inputs.size())
@@ -766,11 +763,7 @@ def greedy_decoder(model, enc_input, start_symbol):
             # print('2'*100)
             projected[:, -1, 8] = torch.inf
         prob = projected.squeeze(0).max(dim=-1, keepdim=False)[1]
-        # print('projected[-1]', projected[:,-1,9:20])
-        # print('prob',prob)
-        # 增量更新（我们希望重复单词预测结果是一样的）
-        # 我们在预测时会选择性忽略重复的预测的词，只摘取最新预测的单词拼接到输入序列中
-        # 拿出当前预测的单词(数字)。我们用x'_t对应的输出z_t去预测下一个单词的概率，不用z_1,z_2..z_{t-1}
+
         next_word = prob.data[-1]
 
         # print('next_word',next_word.item())
@@ -780,7 +773,7 @@ def greedy_decoder(model, enc_input, start_symbol):
             Ari = Ari + Arity(sym) - 1
 
         sx = enc_input[:, :, 0].cpu().numpy()[0]
-        sy = enc_input[:, :, -1].cpu().numpy()[0]  ##### 此处要改 y的位置应该用-1为妥
+        sy = enc_input[:, :, -1].cpu().numpy()[0]
         if Ari == 0:
             y_pre = all_farward(fum, sx)
             r2 = R2(sy, y_pre)
@@ -798,9 +791,8 @@ def greedy_decoder(model, enc_input, start_symbol):
                 best_r2 = r2
                 best_expression = fum
 
-                # print('best_r2',best_r2)
-                # print('best_expression',best_expression)
-            if next_word == tgt_vocab["1.0"]:  ### 如果得到的表达式r2为 1 了就停止搜索
+
+            if next_word == tgt_vocab["1.0"]:  ### If the resulting expression r2 is 1, we stop the search
                 # print('1'*100)
                 acc = acc + 1
                 next_symbol = next_word
@@ -823,13 +815,13 @@ def greedy_decoder(model, enc_input, start_symbol):
             terminal = True
         # print(next_word)
 
-    greedy_dec_predict = dec_input[:, 1:]  # 去除开始符号
+    greedy_dec_predict = dec_input[:, 1:]  # Remove the start symbol S
     return greedy_dec_predict, best_r2, best_expression
 
 # ==========================================================================================
-# 预测阶段
-# 测试集
-enc_inputs = enc_test  
+# Prediction phase
+# test set
+enc_inputs = enc_test
 # print('3333', enc_inputs.size())
 
 def generate_sentences(n):
@@ -838,31 +830,29 @@ def generate_sentences(n):
 sentences = generate_sentences(len(enc_inputs))
 
 def merge_tensors(D, A, B):
-    # 确保A和B是二维的
     if A.dim() == 1:
         A = A.unsqueeze(1)
     if B.dim() == 1:
         B = B.unsqueeze(1)
     a_rows, a_cols = A.shape
     b_rows, b_cols = B.shape
-    # 确保D至少有足够的空间来存储A和B
+    # Ensure that D has at least enough space to store A and B
     d_rows, d_cols = D.shape
     if d_rows < a_rows or d_cols < a_cols + b_cols:
         raise ValueError("Tensor D is not large enough to hold the merged tensors A and B.")
-    # 将A赋值到D的左侧
+    # Assign A to the left of D
     D[:a_rows, :a_cols] = A
-    # 将B赋值到D的右侧
+    # Assign B to the right of D
     D[:b_rows, -b_cols:] = B
     return D
 
 dec_inputs, dec_outputs = make_data(sentences)
+# print('dec_inputs',dec_inputs)
 test_loader = Data.DataLoader(
     MyDataSet(enc_inputs, dec_inputs, dec_outputs), int(len(enc_inputs)), True)
 
-# next(iter(test_loader)) 的作用是从 test_loader 中获取并返回"第一批"数据,比如此处，无论给多少，都只返回第一个 batch 的。
 enc_inputs, _, _ = next(iter(test_loader))
-# print('enc_inputs5555',enc_inputs)
-# print('enc_inputs',enc_inputs)
+
 
 sample = torch.zeros(50, 4)
 N_sample_point = 50
@@ -871,15 +861,12 @@ X = np.linspace(-4, 4, num=N_sample_point)
 X= X.reshape(N_sample_point,1)
 # X = abs(X)
 x1 = X[:,0]
-#### 指定测试表达式 ####
-y = np.sin(x1**1) + np.sin(x1**2 + x1)
-#### 指定测试表达式 ####
+y = np.sin(x1**2) + x1
 
 enc_inputs = merge_tensors(sample, torch.tensor(x1), torch.tensor(y)).unsqueeze(0).to(device)
-# print('enc_inputs'*10,enc_inputs)
-print("=" * 30)
-print("通过训练好的formulaGPT预测的数学公式：")
-# print('4444', len(enc_inputs))
+
+print("=" * 40)
+print("Mathematical formula predicted by trained formulaGPT: ")
 
 for i in range(len(enc_inputs)):
     for kk in range(1):
