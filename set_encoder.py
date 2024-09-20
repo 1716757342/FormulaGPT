@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import pytorch_lightning as pl
 import sys
-sys.path.append('/home/wangyingli/liyanjie/GPT4')
+sys.path.append('/home/...') ### 指定工程路径
 # from .set_transformer import ISAB, PMA
 from src.nesymres.architectures.set_transformer import ISAB, PMA
 class SetEncoder(pl.LightningModule):
