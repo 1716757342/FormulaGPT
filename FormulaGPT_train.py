@@ -1,6 +1,6 @@
 
 # ======================================
-# === Pytorch手写Transformer示意代码
+# === Pytorch手写 FormulaGPT 示意代码
 # ======================================
 
 import math
@@ -13,18 +13,10 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as Data
 from set_encoder import SetEncoder
-# from src.nesymres.architectures.beam_search import BeamHypotheses
 import numpy as np
 import copy
-# from tqdm import tqdm
-# from ..dataset.generator import Generator, InvalidPrefixExpression
-# from itertools import chain
-# from sympy import lambdify
-# from . import bfgs
 import json
 
-# device = 'cpu'
-# device = 'cuda'
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 def pad_sequence(sequence, target_length=40, padding_token='P'):
     # 使用空格将序列拆分成单词列表
@@ -51,18 +43,18 @@ def read_from_file(filename):
 # 使用示例
 
 #### 如果从离线.json文件中读取数据，用如下代码 ####
-filename = "data_symbols.json"
-data = read_from_file(filename)
-train_data = data["symbols"]
+# filename = "data_symbols.json"
+# data = read_from_file(filename)
+# train_data = data["symbols"]
 
 sentences = []
 
 ### 指定模拟训练数据
-# train_data = [
-#     ['S + * + * sin * var_x1 + var_x1 var_x1 var_x1 var_x1 var_x1 var_x1 1.0 + * + var_x1 * var_x1 var_x1 var_x1 var_x1 1.0 E'],
-#     ['S * sin var_x1 var_x1 0.0 * var_x1 var_x1 1.0 E'],
-#     ['S cos var_x1 0.0 sin var_x1 1.0 E'],
-# ]
+train_data = [
+    ['S + * + * sin * var_x1 + var_x1 var_x1 var_x1 var_x1 var_x1 var_x1 1.0 + * + var_x1 * var_x1 var_x1 var_x1 var_x1 1.0 E'],
+    ['S * sin var_x1 var_x1 0.0 * var_x1 var_x1 1.0 E'],
+    ['S cos var_x1 0.0 sin var_x1 1.0 E'],
+]
 
 ##进行 padding
 for i in range(len(train_data)):
@@ -70,8 +62,6 @@ for i in range(len(train_data)):
     pad_words = pad_s.split(' ')
     dec = [pad_words[0:-1], pad_words[1:]]
     sentences.append(dec)
-
-print(sentences[0])
 
 # Padding Should be Zero
 tgt_vocab = {'P': 0, '+': 1, '-':2,'*': 3, '/':4,'sin': 5,'cos':6, 'exp':7,'var_x1': 8,
@@ -229,7 +219,6 @@ class ScaledDotProductAttention(nn.Module):
         # context：[[z1,z2,...],[...]]向量, attn注意力稀疏矩阵（用于可视化的）
         return context, attn
 
-
 class MultiHeadAttention(nn.Module):
     """这个Attention类可以实现:
     Encoder的Self-Attention
@@ -258,7 +247,6 @@ class MultiHeadAttention(nn.Module):
         # 下面的多头的参数矩阵是放在一起做线性变换的，然后再拆成多个头，这是工程实现的技巧
         # B: batch_size, S:seq_len, D: dim
         # (B, S, D) -proj-> (B, S, D_new) -split-> (B, S, Head, W) -trans-> (B, Head, S, W)
-        #           线性变换               拆成多头
 
         # Q: [batch_size, n_heads, len_q, d_k]
         Q = self.W_Q(input_Q).view(batch_size, -1,
@@ -269,7 +257,6 @@ class MultiHeadAttention(nn.Module):
         # V: [batch_size, n_heads, len_v(=len_k), d_v]
         V = self.W_V(input_V).view(batch_size, -1,
                                    n_heads, d_v).transpose(1, 2)
-
         # 因为是多头，所以mask矩阵要扩充成4维的
         # attn_mask: [batch_size, seq_len, seq_len] -> [batch_size, n_heads, seq_len, seq_len]
         attn_mask = attn_mask.unsqueeze(1).repeat(1, n_heads, 1, 1)
@@ -285,8 +272,7 @@ class MultiHeadAttention(nn.Module):
         output = self.fc(context)  # [batch_size, len_q, d_model]
         return nn.LayerNorm(d_model).to(device)(output + residual), attn
 
-
-# Pytorch中的Linear只会对最后一维操作，所以正好是我们希望的每个位置用同一个全连接网络
+## Pytorch中的Linear只会对最后一维操作，所以正好是我们希望的每个位置用同一个全连接网络
 class PoswiseFeedForwardNet(nn.Module):
     def __init__(self):
         super(PoswiseFeedForwardNet, self).__init__()
@@ -327,7 +313,6 @@ class EncoderLayer(nn.Module):
         # enc_outputs: [batch_size, src_len, d_model]
         return enc_outputs, attn
 
-
 class DecoderLayer(nn.Module):
     def __init__(self):
         super(DecoderLayer, self).__init__()
@@ -345,16 +330,14 @@ class DecoderLayer(nn.Module):
         # dec_outputs: [batch_size, tgt_len, d_model], dec_self_attn: [batch_size, n_heads, tgt_len, tgt_len]
         dec_outputs, dec_self_attn = self.dec_self_attn(dec_inputs, dec_inputs, dec_inputs,
                                                         dec_self_attn_mask)  # 这里的Q,K,V全是Decoder自己的输入
-        # print('dec_self_attn_mask',dec_self_attn_mask)
         # dec_outputs: [batch_size, tgt_len, d_model], dec_enc_attn: [batch_size, h_heads, tgt_len, src_len]
         dec_outputs, dec_enc_attn = self.dec_enc_attn(dec_outputs, enc_outputs, enc_outputs,
                                                       dec_enc_attn_mask)  # Attention层的Q(来自decoder) 和 K,V(来自encoder)
-        # print('dec_enc_attn_mask',dec_enc_attn_mask)
+
         # [batch_size, tgt_len, d_model]
         dec_outputs = self.pos_ffn(dec_outputs)
         # dec_self_attn, dec_enc_attn这两个是为了可视化的
         return dec_outputs, dec_self_attn, dec_enc_attn
-
 class Config:
     def __init__(self, N_p, activation, bit16, dec_layers, dec_pf_dim, dim_hidden,
                  dim_input,dropout,input_normalization ,length_eq,
@@ -430,7 +413,6 @@ class Encoder(nn.Module):
                                                enc_self_attn_mask)  # 传入的enc_outputs其实是input，传入mask矩阵是因为你要做self attention
             enc_self_attns.append(enc_self_attn)  # 这个只是为了可视化
         return enc_outputs, enc_self_attns
-
 
 class Decoder(nn.Module):
     def __init__(self):
@@ -551,8 +533,6 @@ def all_farward(l2,X):
                 v1 = stack1.pop() / stack1.pop()
             stack1.append(v1)
     return stack1[0]
-
-
 
 model = Transformer().to(device)
 # 这里的损失函数里面设置了一个参数 ignore_index=0，因为 "pad" 这个单词的索引为 0，这样设置以后，就不会计算 "pad" 的损失（因为本来 "pad" 也没有意义，不需要计算）
