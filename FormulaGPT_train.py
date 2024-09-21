@@ -17,6 +17,7 @@ import numpy as np
 import copy
 import json
 
+save_pth = 'formulaGPT-epoch-ex.pth'
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 def pad_sequence(sequence, target_length=40, padding_token='P'):
     # 使用空格将序列拆分成单词列表
