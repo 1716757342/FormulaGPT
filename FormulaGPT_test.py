@@ -47,35 +47,10 @@ def read_from_file(filename):
         print(f"Error reading from file: {e}")
         return None
 
-# 使用示例
-filename = "data_symbols-test.json"
-data = read_from_file(filename)
-
-
-sentences = []
-# train_data = [
-#     ['S + * + * sin * var_x1 + var_x1 var_x1 var_x1 var_x1 var_x1 var_x1 1.0 + * + var_x1 * var_x1 var_x1 var_x1 var_x1 1.0 E'],
-#     ['S * sin var_x1 var_x1 0.0 * var_x1 var_x1 1.0 E'],
-#     ['S cos var_x1 0.0 sin var_x1 1.0 E'],
-# ]
-train_data = data["symbols"]
-# print(train_data)
-##进行 padding
-for i in range(len(train_data)):
-    pad_s = pad_sequence(train_data[i][0])
-    pad_words = pad_s.split(' ')
-    dec = [pad_words[0:-1], pad_words[1:]]
-    sentences.append(dec)
-
-# print(sentences[0])
-sentences_out = copy.deepcopy(sentences)
-# 中文和英语的单词要分开建立词库
-# Padding Should be Zero
 
 tgt_vocab = {'P': 0, '+': 1, '-': 2, '*': 3, '/': 4, 'sin': 5, 'cos': 6, 'exp': 7, 'var_x1': 8,
              '0.1': 9, '0.2': 10, '0.3': 11, '0.4': 12, '0.5': 13, '0.6': 14, '0.7': 15, '0.8': 16, '0.9': 17,
              '1.0': 18, '0.0': 19, 'S': 20, 'E': 21}
-# idx2word = {i: w for i, w in enumerate(tgt_vocab)}
 
 idx2word = {i: w for i, w in enumerate(tgt_vocab)}
 # print('idx2word',idx2word)
@@ -86,7 +61,6 @@ tgt_vocab_size = len(tgt_vocab)
 epochs = 1000
 src_len = 8  # （源句子的长度）enc_input max sequence length
 tgt_len = 16  # dec_input(=dec_output) max sequence length
-
 # formulaGPT-1000
 # Transformer Parameters
 d_model = 512  # Embedding Size（token embedding和position编码的维度）
@@ -97,57 +71,6 @@ n_layers = 8 # number of Encoder of Decoder Layer（Block的个数）
 n_heads = 8 * 2  # number of heads in Multi-Head Attention（有几套头）
 
 
-# ==============================================================================================
-# 数据构建
-def make_data(sentences):
-    """把单词序列转换为数字序列"""
-    dec_inputs, dec_outputs = [], []
-    for i in range(len(sentences)):
-        # enc_input = [[src_vocab[n] for n in sentences[i][0].split()]]
-        dec_input = [[tgt_vocab[n] for n in sentences[i][0]]]
-        dec_output = [[tgt_vocab[n] for n in sentences[i][1]]]
-
-        # [[1, 2, 3, 4, 5, 6, 7, 0], [1, 2, 8, 4, 9, 6, 7, 0], [1, 2, 3, 4, 10, 6, 7, 0]]
-        # enc_inputs.extend(enc_input)
-        # [[9, 1, 2, 3, 4, 5, 11], [9, 1, 2, 6, 7, 5, 11], [9, 1, 2, 3, 8, 5, 11]]
-        dec_inputs.extend(dec_input)
-        # [[1, 2, 3, 4, 5, 11, 10], [1, 2, 6, 7, 5, 11, 10], [1, 2, 3, 8, 5, 11, 10]]
-        dec_outputs.extend(dec_output)
-        # print(dec_outputs)
-
-    return torch.LongTensor(dec_inputs), torch.LongTensor(dec_outputs)
-
-
-dec_inputs, dec_outputs = make_data(sentences)
-
-
-# print(torch.tensor(data["data"]).shape())
-
-enc_inputs = torch.tensor(data["data"])
-# enc_inputs = enc_inputs.long()
-enc_test = copy.deepcopy(enc_inputs)
-# print(enc_inputs)
-
-class MyDataSet(Data.Dataset):  # 类似于将数据拼接
-    """自定义DataLoader"""
-
-    def __init__(self, enc_inputs, dec_inputs, dec_outputs):
-        super(MyDataSet, self).__init__()
-        self.enc_inputs = enc_inputs
-        self.dec_inputs = dec_inputs
-        self.dec_outputs = dec_outputs
-
-    def __len__(self):
-        return self.enc_inputs.shape[0]
-
-    def __getitem__(self, idx):
-        return self.enc_inputs[idx], self.dec_inputs[idx], self.dec_outputs[idx]
-
-
-# print('MyDataSet', MyDataSet(enc_inputs, dec_inputs, dec_outputs)[0])
-loader = Data.DataLoader(  # 批训练，把数据变成一小批一小批数据进行训练。
-    # DataLoader就是用来包装所使用的数据，每次抛出一批数据
-    MyDataSet(enc_inputs, dec_inputs, dec_outputs), 2, True)
 
 # ====================================================================================================
 # Transformer模型
@@ -429,15 +352,9 @@ class Encoder(nn.Module):
         """
         enc_inputs: [batch_size, src_len]
         """
-        # print('enc_inputs', enc_inputs)
-        # enc_outputs = self.src_emb(
-        #     enc_inputs)  # [batch_size, src_len, d_model] ;enc_input作为输入，会在Embeding中进行一些列运算映射的。
 
         enc_outputs = self.src_emb(
             enc_inputs)  # [batch_size, src_len, d_model] ;enc_input作为输入，会在Embeding中进行一些列运算映射的。
-        # print('enc_inputs',enc_inputs.size())
-        # print('enc_outputs',enc_outputs.size()) # batch * 4
-        # print('pos_emb',self.pos_emb(enc_outputs.transpose(0, 1)).shape)
 
         enc_outputs = self.pos_emb(enc_outputs.transpose(0, 1)).transpose(
             0, 1)  # [batch_size, src_len, d_model] ### 得到加上位置编码的输入序列
@@ -479,7 +396,6 @@ class Decoder(nn.Module):
         # Decoder输入序列的pad mask矩阵（这个例子中decoder是没有加pad的，实际应用中都是有pad填充的）
         dec_self_attn_pad_mask = get_attn_pad_mask(dec_inputs, dec_inputs).to(
             device)  # [batch_size, tgt_len, tgt_len]
-        # print('dec_self_attn_pad_mask',dec_self_attn_pad_mask)
         # Masked Self_Attention：当前时刻是看不到未来的信息的
         dec_self_attn_subsequence_mask = get_attn_subsequence_mask(dec_inputs).to(
             device)  # [batch_size, tgt_len, tgt_len]
@@ -487,15 +403,12 @@ class Decoder(nn.Module):
         # Decoder中把两种mask矩阵相加（既屏蔽了pad的信息，也屏蔽了未来时刻的信息）
         dec_self_attn_mask = torch.gt((dec_self_attn_pad_mask + dec_self_attn_subsequence_mask),
                                       0).to(device)  # [batch_size, tgt_len, tgt_len]; torch.gt比较两个矩阵的元素，大于则返回1，否则返回0
-        # print('dec_self_attn_mask',dec_self_attn_mask)
         # 这个mask主要用于encoder-decoder attention层
         # get_attn_pad_mask主要是enc_inputs的pad mask矩阵(因为enc是处理K,V的，求Attention时是用v1,v2,..vm去加权的，要把pad对应的v_i的相关系数设为0，这样注意力就不会关注pad向量)
         #                       dec_inputs只是提供expand的size的
-        # print('888888888',enc_inputs.size())
         enc_inputs_mask = torch.ones(enc_inputs.size()[0], enc_inputs.size()[2]).cuda()
         dec_enc_attn_mask = get_attn_pad_mask(
             dec_inputs, enc_inputs_mask)  # [batc_size, tgt_len, src_len]
-        # print('888888888', enc_inputs.size())
         dec_self_attns, dec_enc_attns = [], []
         for layer in self.layers:
             # dec_outputs: [batch_size, tgt_len, d_model], dec_self_attn: [batch_size, n_heads, tgt_len, tgt_len], dec_enc_attn: [batch_size, h_heads, tgt_len, src_len]
@@ -506,7 +419,6 @@ class Decoder(nn.Module):
             dec_enc_attns.append(dec_enc_attn)
         # dec_outputs: [batch_size, tgt_len, d_model]
         return dec_outputs, dec_self_attns, dec_enc_attns
-
 
 class Transformer(nn.Module):
     def __init__(self):
@@ -532,10 +444,7 @@ class Transformer(nn.Module):
             dec_inputs, enc_inputs, enc_outputs)
         # dec_outputs: [batch_size, tgt_len, d_model] -> dec_logits: [batch_size, tgt_len, tgt_vocab_size]
         dec_logits = self.projection(dec_outputs)
-        # print('dec_logits',dec_logits.shape)
-        # print('dec_logits.view(-1, dec_logits.size(-1))',dec_logits.view(-1, dec_logits.size(-1)).shape)
         return dec_logits.view(-1, dec_logits.size(-1)), enc_self_attns, dec_self_attns, dec_enc_attns
-
 
 def Arity(s):
     if s in ['x', 'var_x1', 'var_x2', 'var_x3', 'var_x4', 'var_x5', 'var_x6', 'var_x7', 'var_x8', 'var_x9', 'c']:
@@ -670,12 +579,13 @@ def beam_search_decoder(model, enc_input, beam_width, max_length, sos_token, eos
                 probs[0] = -torch.inf
             # 取概率最高的beam_width个词
 
-            top_probs, top_indices = torch.topk(probs, beam_width) ## Choose the top k with the highest probability.
+            # print('44445555',probs)
+            top_probs, top_indices = torch.topk(probs, beam_width) ##选择概率最大的前k个。
             # print('top_probs', top_probs)
             sx = enc_input[:, :, 0].cpu().numpy()[0]
-            sy = enc_input[:, :, -1].cpu().numpy()[0]
-
-
+            sy = enc_input[:, :, -1].cpu().numpy()[0]  ##### 此处要改 y的位置应该用-1为妥
+            # print('next_seq.tolist', next_seq.tolist())
+            # 为每个词创建新的序列并更新其得分
             for i in range(beam_width):
                 if Ari[i] != 0:
                     sym = idx2word[top_indices[i].item()]
@@ -714,16 +624,17 @@ def beam_search_decoder(model, enc_input, beam_width, max_length, sos_token, eos
                 # print('2'*20,r2_score)
                 candidates.append((next_seq, next_score, r2_score))
                 # print('candidates',candidates)
-        # The beam_width candidate sequences with the highest total score are kept
+        # 保留总得分最高的beam_width个候选序列
         beams = sorted(candidates, key=lambda x: x[1], reverse=True)[:beam_width]
 
-    # The sequence with the highest score from the bundle is selected as the output
+    # 从束中选择得分最高的序列作为输出
     return max(beams, key=lambda x: x[2])[0]
 
 def greedy_decoder(model, enc_input, start_symbol):
-    """Greedy coding
+    """贪心编码
     For simplicity, a Greedy Decoder is Beam search when K=1. This is necessary for inference as we don't know the
     target sequence input. Therefore we try to generate the target input word by word, then feed it into the transformer.
+    Starting Reference: http://nlp.seas.harvard.edu/2018/04/03/attention.html#greedy-decoding
     :param model: Transformer Model
     :param enc_input: The encoder input
     :param start_symbol: The start symbol. In this example it is 'S' which corresponds to index 4
@@ -731,21 +642,21 @@ def greedy_decoder(model, enc_input, start_symbol):
     """
     # print('enc_inputs.size()3333', enc_input.size())
     enc_outputs, enc_self_attns = model.encoder(enc_input)
-    # Initialize an all-zero tensor: tensor([], size=(1, 0), dtype=torch.int64)
+    # 初始化一个空的tensor: tensor([], size=(1, 0), dtype=torch.int64)
     dec_input = torch.zeros(1, 0, dtype=torch.int64)
 
     terminal = False
     next_symbol = start_symbol
     Ari = 1
     fum = []
-    global acc  # Declaring global variables
-    max_length = 30 ## Maximum length of formula
-    nu_c = 0 ## At most a few maximum sequence lengths are sought
+    global acc  # 声明全局变量
+    max_length = 30 ## 公式最大长度
+    nu_c = 0 ## 最多寻找几个最大序列长度
     best_r2 = -np.inf
     best_expression = ['sin','var_x1']
     while not terminal:
         # print('dec_input', dec_input)
-        # Prediction phase: The dec_input sequence gets longer (one new predicted symbol at a time)
+        # 预测阶段：dec_input序列会一点点变长（每次添加一个新预测出来的单词）
         dec_input = torch.cat([dec_input.to(device), torch.tensor([[next_symbol]], dtype=torch.int64).to(device)],
                               -1)
         # print('enc_inputs.size()8888',enc_inputs.size())
@@ -763,7 +674,11 @@ def greedy_decoder(model, enc_input, start_symbol):
             # print('2'*100)
             projected[:, -1, 8] = torch.inf
         prob = projected.squeeze(0).max(dim=-1, keepdim=False)[1]
-
+        # print('projected[-1]', projected[:,-1,9:20])
+        # print('prob',prob)
+        # 增量更新（我们希望重复单词预测结果是一样的）
+        # 我们在预测时会选择性忽略重复的预测的词，只摘取最新预测的单词拼接到输入序列中
+        # 拿出当前预测的单词(数字)。我们用x'_t对应的输出z_t去预测下一个单词的概率，不用z_1,z_2..z_{t-1}
         next_word = prob.data[-1]
 
         # print('next_word',next_word.item())
@@ -773,7 +688,7 @@ def greedy_decoder(model, enc_input, start_symbol):
             Ari = Ari + Arity(sym) - 1
 
         sx = enc_input[:, :, 0].cpu().numpy()[0]
-        sy = enc_input[:, :, -1].cpu().numpy()[0]
+        sy = enc_input[:, :, -1].cpu().numpy()[0]  ##### 此处要改 y的位置应该用-1为妥
         if Ari == 0:
             y_pre = all_farward(fum, sx)
             r2 = R2(sy, y_pre)
@@ -791,8 +706,9 @@ def greedy_decoder(model, enc_input, start_symbol):
                 best_r2 = r2
                 best_expression = fum
 
-
-            if next_word == tgt_vocab["1.0"]:  ### If the resulting expression r2 is 1, we stop the search
+                # print('best_r2',best_r2)
+                # print('best_expression',best_expression)
+            if next_word == tgt_vocab["1.0"]:  ### 如果得到的表达式r2为 1 了就停止搜索
                 # print('1'*100)
                 acc = acc + 1
                 next_symbol = next_word
@@ -815,48 +731,32 @@ def greedy_decoder(model, enc_input, start_symbol):
             terminal = True
         # print(next_word)
 
-    greedy_dec_predict = dec_input[:, 1:]  # Remove the start symbol S
+    greedy_dec_predict = dec_input[:, 1:]  # 去除开始符号
     return greedy_dec_predict, best_r2, best_expression
 
 # ==========================================================================================
-# Prediction phase
-# test set
-enc_inputs = enc_test
-# print('3333', enc_inputs.size())
-
-def generate_sentences(n):
-    return np.full((n, 2), '', dtype=object).tolist()
-
-sentences = generate_sentences(len(enc_inputs))
-
+# 预测阶段
 def merge_tensors(D, A, B):
+    # 确保A和B是二维的
     if A.dim() == 1:
         A = A.unsqueeze(1)
     if B.dim() == 1:
         B = B.unsqueeze(1)
     a_rows, a_cols = A.shape
     b_rows, b_cols = B.shape
-    # Ensure that D has at least enough space to store A and B
+    # 确保D至少有足够的空间来存储A和B
     d_rows, d_cols = D.shape
     if d_rows < a_rows or d_cols < a_cols + b_cols:
         raise ValueError("Tensor D is not large enough to hold the merged tensors A and B.")
-    # Assign A to the left of D
+    # 将A赋值到D的左侧
     D[:a_rows, :a_cols] = A
-    # Assign B to the right of D
+    # 将B赋值到D的右侧
     D[:b_rows, -b_cols:] = B
     return D
 
-dec_inputs, dec_outputs = make_data(sentences)
-# print('dec_inputs',dec_inputs)
-test_loader = Data.DataLoader(
-    MyDataSet(enc_inputs, dec_inputs, dec_outputs), int(len(enc_inputs)), True)
-
-enc_inputs, _, _ = next(iter(test_loader))
-
-
 sample = torch.zeros(50, 4)
 N_sample_point = 50
-# X = np.random.random((N_sample_point, 1)) * 4
+#### 指定测试数据 ####
 X = np.linspace(-4, 4, num=N_sample_point)
 X= X.reshape(N_sample_point,1)
 # X = abs(X)
@@ -865,8 +765,8 @@ y = np.sin(x1**2) + x1
 
 enc_inputs = merge_tensors(sample, torch.tensor(x1), torch.tensor(y)).unsqueeze(0).to(device)
 
-print("=" * 40)
-print("Mathematical formula predicted by trained formulaGPT: ")
+print("=" * 50)
+print("通过训练好的formulaGPT预测的数学公式：")
 
 for i in range(len(enc_inputs)):
     for kk in range(1):
