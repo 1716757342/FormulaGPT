@@ -115,7 +115,7 @@ enc_inputs[:,:,1:-1] = 0
 enc_test = copy.deepcopy(enc_inputs)
 
 class MyDataSet(Data.Dataset): # Similar to concatenating data
-    """自定义DataLoader"""
+    """ Custom DataLoader"""
     def __init__(self, enc_inputs, dec_inputs, dec_outputs):
         super(MyDataSet, self).__init__()
         self.enc_inputs = enc_inputs
