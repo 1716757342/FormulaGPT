@@ -17,7 +17,8 @@ import numpy as np
 import copy
 import json
 
-save_pth = 'formulaGPT-epoch-ex.pth'
+save_pth = 'formulaGPT-epoch-ex.pth' ### 指定模型保存路径
+train_data_filename = "data_symbols.json" #### 指定训练数据路径
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 def pad_sequence(sequence, target_length=40, padding_token='P'):
     # 使用空格将序列拆分成单词列表
@@ -43,19 +44,19 @@ def read_from_file(filename):
 
 # 使用示例
 
-#### 如果从离线.json文件中读取数据，用如下代码 ####
-# filename = "data_symbols.json"
-# data = read_from_file(filename)
-# train_data = data["symbols"]
+### 如果从离线.json文件中读取数据，用如下代码 ####
+filename = train_data_filename
+data = read_from_file(filename)
+train_data = data["symbols"]
 
 sentences = []
 
 ### 指定模拟训练数据
-train_data = [
-    ['S + * + * sin * var_x1 + var_x1 var_x1 var_x1 var_x1 var_x1 var_x1 1.0 + * + var_x1 * var_x1 var_x1 var_x1 var_x1 1.0 E'],
-    ['S * sin var_x1 var_x1 0.0 * var_x1 var_x1 1.0 E'],
-    ['S cos var_x1 0.0 sin var_x1 1.0 E'],
-]
+# train_data = [
+#     ['S + * + * sin * var_x1 + var_x1 var_x1 var_x1 var_x1 var_x1 var_x1 1.0 + * + var_x1 * var_x1 var_x1 var_x1 var_x1 1.0 E'],
+#     ['S * sin var_x1 var_x1 0.0 * var_x1 var_x1 1.0 E'],
+#     ['S cos var_x1 0.0 sin var_x1 1.0 E'],
+# ]
 
 ##进行 padding
 for i in range(len(train_data)):
@@ -545,7 +546,7 @@ optimizer = optim.SGD(model.parameters(), lr=1e-4,
 for epoch in range(epochs):
     if epoch%40 == 0:
         # 每 40个 epoch保存一次模型参数
-        torch.save(model.state_dict(), 'formulaGPT-epoch-ex.pth')
+        torch.save(model.state_dict(), save_pth)
         print('Model weights saved epoch ' + str(epoch))
     for enc_inputs, dec_inputs, dec_outputs in loader:
         # print('enc_inputs, dec_inputs, dec_outputs',enc_inputs, dec_inputs, dec_outputs)
