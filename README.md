@@ -8,6 +8,7 @@ The repository provides a schematic code of formulaGPT, containing the basic cod
 ![Python Versions](https://img.shields.io/badge/Python-3.7%20%7C%203.8%20%7C%203.9-blue)
 
 <br>
+
 # Installation
 
 ### Installation - core package
