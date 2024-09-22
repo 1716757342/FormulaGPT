@@ -86,7 +86,7 @@ n_layers = 6 # number of Encoder of Decoder Layer
 n_heads = 8  # number of heads in Multi-Head Attention
 
 # ==============================================================================================
-# 数据构建
+# Data construction
 def make_data(sentences):
     """ Converts a sequence of words to a sequence of numbers. """
     dec_inputs, dec_outputs = [], []
