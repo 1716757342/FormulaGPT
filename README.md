@@ -3,7 +3,11 @@
 
 
 The repository provides a schematic code of formulaGPT, containing the basic code implementation of formulaGPT. FormulaGPT is trained on extensive sparse reward learning histories from reinforcement learning-based SR algorithms. After training, the SR algorithm based on reinforcement learning is distilled into a Transformer. When new test data comes, FormulaGPT can directly generate a "reinforcement learning process" and automatically update the learning policy in context. Tested on more than ten datasets including SRBench, formulaGPT achieves the state-of-the-art performance in fitting ability compared with four baselines. In addition, it achieves satisfactory results in noise robustness, versatility, and inference efficiency.
+<br>
 
+![Python Versions](https://img.shields.io/badge/Python-3.7%20%7C%203.8%20%7C%203.9-blue)
+
+<br>
 # Installation
 
 ### Installation - core package
@@ -24,8 +28,8 @@ pip install -r requirements.txt # Install packages and core dependencies
 ### Step 1: `save_pth `specifies the save path for the model. `train_data_filename` is the path to the training data. 
 
 ```
-save_pth = 'formulaGPT-epoch-ex.pth' ### 指定模型保存路径
-train_data_filename = "data_symbols.json" #### 指定训练数据路径
+save_pth = 'formulaGPT-epoch-ex.pth' ### Specifies the model save path
+train_data_filename = "train_data.json" #### Specify the training data path
 ```
 
 ### Step 2: Specifies the relevant hyperparameters of formulaGPT
@@ -50,7 +54,7 @@ python formulaGPT_train.py
 ### Step1: Specifies the model loading path
 Start by specifying the path to load the model via `model_pth`.
 ```
-model_pth = 'formulaGPT-epoch-10000.pth' #### 指定要加载的模型路径
+model_pth = 'formulaGPT-epoch-10000.pth' #### Specifies the model path to load
 ```
 
 ### Step2: Specify the model hyperparameters
@@ -60,22 +64,22 @@ src_len = 8  # enc_input max sequence length
 tgt_len = 16  # dec_input(=dec_output) max sequence length
 # formulaGPT-1000
 # Transformer Parameters
-d_model = 512  # Embedding Size（token embedding和position编码的维度）
-# FeedForward dimension (两次线性层中的隐藏层 512->2048->512，线性层是用来做特征提取的），当然最后会再接一个projection层
+d_model = 512  # Embedding Size
+# FeedForward dimension 
 d_ff = 2048
-d_k = d_v = 252*1  # dimension of K(=Q), V（Q和K的维度需要相同，这里为了方便让K=V）
-n_layers = 8 # number of Encoder of Decoder Layer（Block的个数）
-n_heads = 8 * 2  # number of heads in Multi-Head Attention（有几套头）
+d_k = d_v = 252*1  # dimension of K(=Q), V
+n_layers = 8 # number of Encoder of Decoder Layer
+n_heads = 8 * 2  # number of heads in Multi-Head Attention
 ```
 ### Step3: Given the test data `[X,y]`
 Here `[X,y]` can be input from the outside world or generated randomly.
 ```
-#################### 指定测试数据 ####################
+#################### Specifying test data ####################
 X = np.linspace(-4, 4, num=N_sample_point)
 X= X.reshape(N_sample_point,1)
 x1 = X[:,0]
 y = np.sin(x1**2) + x1
-#################### 指定测试数据 ####################
+#################### Specifying test data ####################
 ```
 ### Step3: Run `formuGPT_test.py`
 Run the file `formuGPT_test.py` with the following command:
