@@ -82,7 +82,7 @@ x1 = X[:,0]
 y = np.sin(x1**2) + x1
 #################### Specifying test data ####################
 ```
-### Step3: Run `formuGPT_test.py`
+### Step3: Run `formulaGPT_test.py`
 Run the file `formuGPT_test.py` with the following command:
 ```
 python formuGPT_test.py
