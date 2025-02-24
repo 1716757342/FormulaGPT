@@ -367,7 +367,7 @@ class Transformer(nn.Module):
             d_model, tgt_vocab_size, bias=False).to(device)
 
     def forward(self, enc_inputs, dec_inputs):
-        """Transformers的输入：两个序列
+        """ Input to Transformers: Two sequences
         enc_inputs: [batch_size, src_len]
         dec_inputs: [batch_size, tgt_len]
         """
@@ -445,7 +445,7 @@ optimizer = optim.SGD(model.parameters(), lr=1e-5,
 # ====================================================================================================
 LOSS = []
 
-# 指定之前保存权重的位置
+# Specifies where the weights were previously saved
 model_path = model_pth # Update to your file path
 
 # load weights into the model
