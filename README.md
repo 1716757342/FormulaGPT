@@ -1,8 +1,5 @@
-# FormulaGPT: A Transformer-based Model for Symbolic Regression
+# Distills the Symbolic Regression Algorithms based on Reinforcement Learning into a Transformer by Modeling Their Learning History Sequences
 
-<p align="center">
-    <img src="FormulaGPT_v2.png" alt="FormulaGPT Logo" width="200"/>
-</p>
 
 [![Python Version](https://img.shields.io/badge/Python-3.7%20%7C%203.8%20%7C%203.9-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue)](https://opensource.org/licenses/Apache-2.0)
@@ -11,20 +8,23 @@
 
 ---
 
-## Overview
+## Abstract
 
-FormulaGPT is a cutting-edge Transformer-based model designed for **Symbolic Regression (SR)**. It leverages extensive learning histories from reinforcement learning-based SR algorithms to generate mathematical formulas directly from data points. After training, FormulaGPT can automatically update its learning policy in context, making it highly versatile for diverse regression tasks.
+Mathematical formulas are the human language used to describe nature. Discovering these formulas from observational data is a major challenge in artificial intelligence, known as symbolic regression (SR). Traditionally, SR has been tackled as a combinatorial optimization problem using genetic programming (GP) or reinforcement learning algorithms, which offer strong noise robustness and interval robustness but suffer from long inference times and low search efficiency. 
+Later, pretraining-based methods were proposed, which train a transformer using a large number of artificially generated data pairs. These methods have very high inference efficiency, but their noise robustness and interval robustness are poor due to their strong dependence on the training data.\\
+So, can we combine the advantages of the above two categories of SR algorithms?
+In this paper, we treat the learning history of reinforcement learning-based SR algorithms as a long causal sequence. Next, we train a transformer with sampled data points [X,y] as input and learning history sequences as output. 
+After training, the SR algorithm based on reinforcement learning is distilled into a Transformer. When new test data comes, The Transformer can directly generate a `reinforcement learning process' and automatically update the learning policy during the generation process. We called our method formulaGPT and tested it on more than ten datasets including SRBench, formulaGPT achieves state-of-the-art performance in fitting ability compared with four baselines. In addition, it achieves satisfactory results in noise robustness, interval robustness, and inference efficiency.
 
 <p align="center">
-    <img src="images/model_overview.png" alt="Model Overview" width="800"/>
+    <img src="FormulaGPT.png" alt="Model Overview" width="800"/>
 </p>
 
-## Features
+## contributions
 
-- **State-of-the-art Performance**: Achieves superior fitting ability compared to traditional SR methods.
-- **Noise Robustness**: Demonstrates excellent resilience against noisy datasets.
-- **Versatility**: Effectively handles a wide range of regression problems.
-- **Efficient Inference**: Optimized for quick formula generation during inference.
+- We propose a symbolic regression algorithm, FormulaGPT, which not only has good fitting performance on multiple datasets but also has good noise robustness, interval robustness, and inference efficiency. 
+- We regard the learning history of the reinforcement learning-based SR algorithm as a long causal sequence, and use the massive learning history sequences collected as training data to train a transformer. Experiments show that when new data comes, the trained transformer can automatically update the policy during the generation process. 
+- We extract a series of `shortcut' training data from each history sequence. That is a path where $R^2$ goes all the way up, with no oscillations. Experiments show that this operation can greatly improve the performance of formulaGPT.
 
 ## Quick Installation
 
@@ -37,9 +37,6 @@ FormulaGPT is a cutting-edge Transformer-based model designed for **Symbolic Reg
 ### Installation Steps
 
 ```bash
-# Clone this repository
-git clone https://github.com/username/formulaGPT.git
-cd formulaGPT
 
 # Create and activate a virtual environment
 python3 -m venv venv
@@ -130,25 +127,12 @@ The best $R^2$: 0.9999999999999951
 The best expression:  ['+', 'sin', '*', 'var_x1', 'var_x1', 'var_x1']
 ```
 
----
-
-## Why FormulaGPT?
-
-- **Efficiency**: The model is optimized for quick inference, making it suitable for real-time applications.
-- **Versatility**: Works across various domains, from physics to finance.
-- **Interpretability**: Generates human-readable mathematical expressions, enhancing trust and understanding.
-
----
-
-## Contributing
-
-Contributions are welcome! If you have any suggestions or improvements for FormulaGPT, please fork the repository and submit a pull request.
 
 ---
 
 ## Contact
 
-For any questions or feedback, feel free to reach out at [your.email@example.com](mailto:your.email@example.com).
+For any questions or feedback, feel free to reach out at [XXX](mailto:XXXX).
 
 ---
 
@@ -158,4 +142,4 @@ This project is [Apache License 2.0](LICENSE)-licensed. Feel free to use, modify
 
 ---
 
-Thank you for choosing FormulaGPT! We hope this tool enhances your symbolic regression tasks and look forward to seeing the innovative applications you build with it!
+Thank you for choosing FormulaGPT! We sincerely hope that our work can bring inspiration to your future research.
