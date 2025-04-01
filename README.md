@@ -7,6 +7,61 @@
 [![GitHub Forks](https://img.shields.io/github/forks/username/repo.svg?style=social)](https://github.com/username/repo)
 
 ---
+## Rebuttal
+
+**Reviewer W4MF**
+
+**Q13**
+
+Dear reviewers, we may not have a good example, but the following example of binary function may be better understood by you.
+
+For the expression: y = sin($x_1$) + cos($x_2$)
+
+Get data sampling points: [X, y] = [$x_1 $, $x_2$ y] (random sampling first $x_1 $, $x_2 $, then enter the above expression to calculate the corresponding values of y)
+
+Output sequence  : [ *, sin, $x_1$, $x_2$, 0.22 +, sin, $x_1$, sin, $x_2$, 0.76 +, cos, $x_1$, sin, $x_2$, 0.48 +, cos, $x_1$, cos, $x_2$, 0.81, +, sin, $x_1$, cos +, $x_2$, $x_2$, 0.99 +, sin,$ x_1$, cos, $x_2$, 1.00].
+
+The output sequence is the search process of DSR. First of all, we sampled data $(X, y) = (x_1, x_2,.., y] $as input, and then the DSR first search to get the optimal expression for sin ($x_1$) * $x_2$, $R ^ 2$ = 0.22; Then, after using the risk policy gradient to update the policy network parameters, the second search was carried out, and the optimal expression obtained was sin($x_1$)+sin($x_2$), $R^2$=0.76. Similarly, iterating the above process, the optimal expression obtained in the sixth search is the target expression sin($x_1$)+cos($x_2$), $R^2$=1.00.
+
+To summarize, for the expression y = sin($x_1$) + cos($x_2$), we have collected one training data of FormulaGPT: {[X, y], [ *, sin, $x_1$, $x_2$, 0.22, +, sin, $x_1$, sin, $x_2$, 0.76 +, cos, $x_1$, sin, $x_2$, 0.48 +, cos, $x_1$, cos, $x_2$, 0.81, +, sin,$ x_1$, cos, +, $x_2$, $x_2$, 0.99 +, sin, $x_1$, cos, $x_2$, 1.00]}
+
+**Q14**
+
+Dear reviewer, what you said is quite right. However, we have already introduced the importance of SR at the beginning of the introduction. This may not be enough, but we will add more.
+Secondly, the current symbolic regression methods almost use these symbols, and the well-known Fourier series can approximate any curve, but it is equivalent to only using the four symbols [sin,+,\*,c], so the representation ability of this symbol library is sufficient.
+
+**Q15**
+
+DSO only introduces GP on the basis of DSR, and the search process of both is very similar. So the collected training data is also completely consistent in form.
+
+**Q17**
+
+Dear reviewers, D represents the sampled data point D=[X,y]=[$x_1$,$x_2$,...,y].
+
+**Q19**
+
+Dear Reviewer, this strange reference refers to Section 4.6 of the article, which describes ablation experiments on "shortcut" data.
+
+**Q20**
+
+We use Python's sympy library to call the BFGS optimizer directly. For example, for the expression y = sin(C * x), we take X as input and y as output and use the BFGS optimizer to get the value of the constant C.
+
+**Q21**
+
+The source of RL refers to the fact that we train a Transformer through a large number of inference process sequences of an RL-based SR algorithm so that the RL-based SR algorithm distills into the Transformer. After training, the Transformer can directly generate RL's search process when new data comes in, without going through multiple rounds of iterations. We highly recommend you to take a look at the article referenced in our introduction,** https://arxiv.org/pdf/2210.14215**.
+
+**Q22**
+Dear reviewers, there may be a problem in our presentation. We will change the presentation in the paper. 'Massive data' means that the 15M data we use is indeed relatively large, and 'limited training data' means that the 15M data we use now does not make formulaGPT have the ability to solve very complex problems. If you want to solve more complex problems, More training data may be required.
+
+
+**Q24**
+Dear reviewer, in real inference, $ R^2$ does not always go up as in shortcut data. Instead, in most cases, $ R^2$ shows an upward trend in volatility like reinforcement learning, as shown in Figure 7 in the appendix of the article. Because we're distilling RL into the transformer.
+
+**Q25**
+Dear reviewers, our work is not just about "using Transformers to do X". NeSymRes are inputs [X,y] that directly generate a preorder traversal of an expression (not the learning process of SR algorithms based on reinforcement learning), which might be like you said using Transformers to do X. However, our contribution is on a higher level. We try to explore a way to distill the reinforcement learning-based SR algorithm into a transformer so that the transformer can directly generate the learning process of the reinforcement learning-based SR algorithm. At the same time, it has the advantages of high efficiency of SR algorithm based on pre-training and good robustness of SR algorithm based on reinforcement learning.
+
+
+
 
 ## Abstract
 
