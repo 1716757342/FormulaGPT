@@ -48,7 +48,7 @@ We use Python's sympy library to call the BFGS optimizer directly. For example, 
 
 **Q21**
 
-The source of RL refers to the fact that we train a Transformer through a large number of inference process sequences of an RL-based SR algorithm so that the RL-based SR algorithm distills into the Transformer. After training, the Transformer can directly generate RL's search process when new data comes in, without going through multiple rounds of iterations. We highly recommend you to take a look at the article referenced in our introduction,** https://arxiv.org/pdf/2210.14215**.
+The source of RL refers to the fact that we train a Transformer through a large number of inference process sequences of an RL-based SR algorithm so that the RL-based SR algorithm distills into the Transformer. After training, the Transformer can directly generate RL's search process when new data comes in, without going through multiple rounds of iterations. We highly recommend you take a look at the article referenced in our introduction,** https://arxiv.org/pdf/2210.14215**.
 
 **Q22**
 Dear reviewers, there may be a problem in our presentation. We will change the presentation in the paper. 'Massive data' means that the 15M data we use is indeed relatively large, and 'limited training data' means that the 15M data we use now does not make formulaGPT have the ability to solve very complex problems. If you want to solve more complex problems, More training data may be required.
@@ -78,7 +78,7 @@ After training, the SR algorithm based on reinforcement learning is distilled in
 ## contributions
 
 - We propose a symbolic regression algorithm, FormulaGPT, which not only has good fitting performance on multiple datasets but also has good noise robustness, interval robustness, and inference efficiency. 
-- We regard the learning history of the reinforcement learning-based SR algorithm as a long causal sequence, and use the massive learning history sequences collected as training data to train a transformer. Experiments show that when new data comes, the trained transformer can automatically update the policy during the generation process. 
+- We regard the learning history of the reinforcement learning-based SR algorithm as a long causal sequence and use the massive learning history sequences collected as training data to train a transformer. Experiments show that when new data comes, the trained transformer can automatically update the policy during the generation process. 
 - We extract a series of `shortcut' training data from each history sequence. That is a path where $R^2$ goes all the way up, with no oscillations. Experiments show that this operation can greatly improve the performance of formulaGPT.
 
 ## Quick Installation
