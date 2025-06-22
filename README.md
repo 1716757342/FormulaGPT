@@ -130,7 +130,7 @@ The best expression:  ['+', 'sin', '*', 'var_x1', 'var_x1', 'var_x1']
 
 ## Contact
 
-For any questions or feedback, feel free to reach out at [XXX](mailto:XXXX).
+For any questions or feedback, feel free to reach out at liyanjie@semi.ac.cn.
 
 ---
 
