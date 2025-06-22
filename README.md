@@ -15,7 +15,7 @@ Mathematical formulas are the human language used to describe nature. Discoverin
 Then, the SR algorithm based on reinforcement learning is distilled into a Transformer. When new test data comes, The Transformer can directly generate a `reinforcement learning process' and automatically update the learning policy during the generation process. We called our method formulaGPT and tested it on more than ten datasets, including SRBench. formulaGPT achieves state-of-the-art performance in fitting ability compared with four baselines. In addition, it achieves satisfactory results in robustness and inference efficiency.
 
 <p align="center">
-    <img src="FormulaGPT.png" alt="Model Overview" width="800"/>
+    <img src="TKDE.png" alt="Model Overview" width="800"/>
 </p>
 
 ## contributions
